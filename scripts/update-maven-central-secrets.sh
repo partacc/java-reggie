@@ -51,7 +51,7 @@ done
 
 op_read() {
     local field="$1"
-    op item get "$OP_ITEM_NAME" --vault "$OP_VAULT" --field "$field" 2>/dev/null || true
+    op item get "$OP_ITEM_NAME" --vault "$OP_VAULT" --field "$field" --reveal 2>/dev/null || true
 }
 
 op_available() {
