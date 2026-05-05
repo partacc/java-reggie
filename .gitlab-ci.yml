@@ -60,11 +60,16 @@ publish_snapshot:
     - if: '$CI_COMMIT_BRANCH == "main"'
       when: on_success
   script:
-    - export SONATYPE_USERNAME=$(vault kv get -field=username kv/k8s/gitlab-runner/java-reggie/maven-central)
-    - export SONATYPE_PASSWORD=$(vault kv get -field=password kv/k8s/gitlab-runner/java-reggie/maven-central)
-    - export ORG_GRADLE_PROJECT_signingInMemoryKey=$(vault kv get -field=gpg_private_key kv/k8s/gitlab-runner/java-reggie/signing)
-    - export ORG_GRADLE_PROJECT_signingInMemoryKeyId=$(vault kv get -field=gpg_key_id kv/k8s/gitlab-runner/java-reggie/signing)
-    - export ORG_GRADLE_PROJECT_signingInMemoryKeyPassword=$(vault kv get -field=gpg_passphrase kv/k8s/gitlab-runner/java-reggie/signing)
+    - SONATYPE_USERNAME=$(vault kv get -field=username kv/k8s/gitlab-runner/java-reggie/maven-central) || { echo "ERROR: vault read failed for username"; exit 1; }
+    - SONATYPE_PASSWORD=$(vault kv get -field=password kv/k8s/gitlab-runner/java-reggie/maven-central) || { echo "ERROR: vault read failed for password"; exit 1; }
+    - '[[ -n "$SONATYPE_USERNAME" ]] || { echo "ERROR: SONATYPE_USERNAME is empty"; exit 1; }'
+    - '[[ -n "$SONATYPE_PASSWORD" ]] || { echo "ERROR: SONATYPE_PASSWORD is empty"; exit 1; }'
+    - echo "Vault credentials loaded (username length=${#SONATYPE_USERNAME}, password length=${#SONATYPE_PASSWORD})"
+    - export SONATYPE_USERNAME SONATYPE_PASSWORD
+    - ORG_GRADLE_PROJECT_signingInMemoryKey=$(vault kv get -field=gpg_private_key kv/k8s/gitlab-runner/java-reggie/signing) || { echo "ERROR: vault read failed for signing key"; exit 1; }
+    - ORG_GRADLE_PROJECT_signingInMemoryKeyId=$(vault kv get -field=gpg_key_id kv/k8s/gitlab-runner/java-reggie/signing) || { echo "ERROR: vault read failed for signing key id"; exit 1; }
+    - ORG_GRADLE_PROJECT_signingInMemoryKeyPassword=$(vault kv get -field=gpg_passphrase kv/k8s/gitlab-runner/java-reggie/signing) || { echo "ERROR: vault read failed for signing passphrase"; exit 1; }
+    - export ORG_GRADLE_PROJECT_signingInMemoryKey ORG_GRADLE_PROJECT_signingInMemoryKeyId ORG_GRADLE_PROJECT_signingInMemoryKeyPassword
     - ./gradlew :reggie-runtime:publishToSonatype $GRADLE_ARGS
 
 # Run once manually to generate the GPG signing key and store it in AWS SSM
