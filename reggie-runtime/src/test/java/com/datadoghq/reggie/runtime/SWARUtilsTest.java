@@ -17,6 +17,8 @@ package com.datadoghq.reggie.runtime;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import org.junit.jupiter.api.Test;
 
 /** Direct unit tests for SWARUtils, covering uncovered branches. */
@@ -109,17 +111,19 @@ class SWARUtilsTest {
 
   // ── allBytesInRange ──────────────────────────────────────────────────────────
 
+  private static long pack(String s) {
+    return ByteBuffer.wrap(s.getBytes()).order(ByteOrder.nativeOrder()).getLong(0);
+  }
+
   @Test
   void allBytesInRangeTrue() {
-    long chunk = SWARUtils.getLong("abcdefgh".getBytes(), 0);
-    assertTrue(SWARUtils.allBytesInRange(chunk, 'a', 'z'));
+    assertTrue(SWARUtils.allBytesInRange(pack("abcdefgh"), 'a', 'z'));
   }
 
   @Test
   void allBytesInRangeFalse() {
     // '1' (0x31) is outside [a-z]
-    long chunk = SWARUtils.getLong("a1cdefgh".getBytes(), 0);
-    assertFalse(SWARUtils.allBytesInRange(chunk, 'a', 'z'));
+    assertFalse(SWARUtils.allBytesInRange(pack("a1cdefgh"), 'a', 'z'));
   }
 
   // ── findFirstInRange ─────────────────────────────────────────────────────────
