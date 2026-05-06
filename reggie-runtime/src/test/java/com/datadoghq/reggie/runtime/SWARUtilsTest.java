@@ -159,37 +159,58 @@ class SWARUtilsTest {
   void findFirstOfShortScalar() {
     // Short array → scalar path
     byte[] bytes = "abc".getBytes();
-    assertEquals(0, SWARUtils.findFirstOf(bytes, 0, bytes.length, (byte) 'a', (byte) 'x', (byte) 'y', (byte) 'z'));
-    assertEquals(-1, SWARUtils.findFirstOf(bytes, 0, bytes.length, (byte) '1', (byte) '2', (byte) '3', (byte) '4'));
+    assertEquals(
+        0,
+        SWARUtils.findFirstOf(
+            bytes, 0, bytes.length, (byte) 'a', (byte) 'x', (byte) 'y', (byte) 'z'));
+    assertEquals(
+        -1,
+        SWARUtils.findFirstOf(
+            bytes, 0, bytes.length, (byte) '1', (byte) '2', (byte) '3', (byte) '4'));
   }
 
   @Test
   void findFirstOfLongArraySwarHit() {
     // >= 8 bytes → SWAR, target2 '@' found at pos 8
     byte[] bytes = "________@_______".getBytes();
-    assertEquals(8, SWARUtils.findFirstOf(bytes, 0, bytes.length, (byte) '@', (byte) '#', (byte) '$', (byte) '%'));
+    assertEquals(
+        8,
+        SWARUtils.findFirstOf(
+            bytes, 0, bytes.length, (byte) '@', (byte) '#', (byte) '$', (byte) '%'));
   }
 
   @Test
   void findFirstOfLongArraySwarMiss() {
     // No match in any chunk
     byte[] bytes = "aaaaaaaaaaaaaaaa".getBytes();
-    assertEquals(-1, SWARUtils.findFirstOf(bytes, 0, bytes.length, (byte) '1', (byte) '2', (byte) '3', (byte) '4'));
+    assertEquals(
+        -1,
+        SWARUtils.findFirstOf(
+            bytes, 0, bytes.length, (byte) '1', (byte) '2', (byte) '3', (byte) '4'));
   }
 
   @Test
   void findFirstOfMatchInRemainder() {
     // 9-byte array: SWAR chunk misses, remainder finds '@'
     byte[] bytes = "aaaaaaaa@".getBytes();
-    assertEquals(8, SWARUtils.findFirstOf(bytes, 0, bytes.length, (byte) '@', (byte) '#', (byte) '$', (byte) '%'));
+    assertEquals(
+        8,
+        SWARUtils.findFirstOf(
+            bytes, 0, bytes.length, (byte) '@', (byte) '#', (byte) '$', (byte) '%'));
   }
 
   @Test
   void findFirstOfMultipleTargets() {
     // Each target covered in scalar fallback
     byte[] bytes = "a#b$".getBytes();
-    assertEquals(1, SWARUtils.findFirstOf(bytes, 0, bytes.length, (byte) '!', (byte) '#', (byte) '?', (byte) '@'));
-    assertEquals(3, SWARUtils.findFirstOf(bytes, 2, bytes.length, (byte) '!', (byte) '?', (byte) '$', (byte) '@'));
+    assertEquals(
+        1,
+        SWARUtils.findFirstOf(
+            bytes, 0, bytes.length, (byte) '!', (byte) '#', (byte) '?', (byte) '@'));
+    assertEquals(
+        3,
+        SWARUtils.findFirstOf(
+            bytes, 2, bytes.length, (byte) '!', (byte) '?', (byte) '$', (byte) '@'));
   }
 
   // ── findFirstNotInRange ──────────────────────────────────────────────────────
@@ -226,10 +247,12 @@ class SWARUtilsTest {
 
   @Test
   void findFirstInRangesInvalidRanges() {
-    assertThrows(IllegalArgumentException.class, () ->
-        SWARUtils.findFirstInRanges(new byte[0], 0, 0, new char[0]));
-    assertThrows(IllegalArgumentException.class, () ->
-        SWARUtils.findFirstInRanges(new byte[0], 0, 0, new char[1]));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> SWARUtils.findFirstInRanges(new byte[0], 0, 0, new char[0]));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> SWARUtils.findFirstInRanges(new byte[0], 0, 0, new char[1]));
   }
 
   @Test

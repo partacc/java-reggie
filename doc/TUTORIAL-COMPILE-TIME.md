@@ -56,8 +56,8 @@ Compile-time compilation means your regex patterns are:
 
 ```gradle
 dependencies {
-    implementation 'com.datadoghq:reggie-annotations:0.0.1-SNAPSHOT'
-    annotationProcessor 'com.datadoghq:reggie-processor:0.0.1-SNAPSHOT'
+    implementation 'com.datadoghq:reggie:0.0.1-SNAPSHOT'
+    annotationProcessor 'com.datadoghq:reggie:0.0.1-SNAPSHOT'
 }
 ```
 
@@ -107,11 +107,8 @@ repositories {
 }
 
 dependencies {
-    // Reggie annotations (contains @RegexPattern)
-    implementation 'com.datadoghq:reggie-annotations:0.0.1-SNAPSHOT'
-
-    // Annotation processor (generates code at build time)
-    annotationProcessor 'com.datadoghq:reggie-processor:0.0.1-SNAPSHOT'
+    implementation 'com.datadoghq:reggie:0.0.1-SNAPSHOT'
+    annotationProcessor 'com.datadoghq:reggie:0.0.1-SNAPSHOT'
 }
 
 java {
@@ -134,14 +131,8 @@ Add to your `pom.xml`:
 <dependencies>
     <dependency>
         <groupId>com.datadoghq</groupId>
-        <artifactId>reggie-annotations</artifactId>
+        <artifactId>reggie</artifactId>
         <version>0.0.1-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-        <groupId>com.datadoghq</groupId>
-        <artifactId>reggie-processor</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
-        <scope>provided</scope>
     </dependency>
 </dependencies>
 ```
@@ -738,7 +729,7 @@ IllegalArgumentException: No service provider found for com.example.patterns.Val
 
 # 2. Verify annotation processor in build.gradle
 dependencies {
-    annotationProcessor 'com.datadoghq:reggie-processor:0.0.1-SNAPSHOT'
+    annotationProcessor 'com.datadoghq:reggie:0.0.1-SNAPSHOT'
 }
 
 # 3. Ensure class implements ReggiePatterns

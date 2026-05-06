@@ -21,7 +21,9 @@ import com.datadoghq.reggie.runtime.ReggieMatcher;
 import java.lang.reflect.Method;
 import org.junit.jupiter.api.Test;
 
-/** End-to-end tests for bytecode generation. Tests that patterns compile to working matcher classes. */
+/**
+ * End-to-end tests for bytecode generation. Tests that patterns compile to working matcher classes.
+ */
 class ReggieMatcherBytecodeGeneratorTest {
 
   private Object compile(String pattern, String className) throws Exception {
@@ -85,8 +87,7 @@ class ReggieMatcherBytecodeGeneratorTest {
 
   @Test
   void testEmailPattern() throws Exception {
-    Object matcher =
-        compile("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}", "EmailMatcher");
+    Object matcher = compile("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}", "EmailMatcher");
     Method matches = matcher.getClass().getMethod("matches", String.class);
     assertTrue((Boolean) matches.invoke(matcher, "test@example.com"));
     assertTrue((Boolean) matches.invoke(matcher, "user.name+tag@domain.co.uk"));
@@ -124,8 +125,7 @@ class ReggieMatcherBytecodeGeneratorTest {
 
   @Test
   void testBoundedQuantifiersStrategy() throws Exception {
-    Object matcher =
-        compile("\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}", "IPv4Matcher");
+    Object matcher = compile("\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}", "IPv4Matcher");
     Method matches = matcher.getClass().getMethod("matches", String.class);
     Method find = matcher.getClass().getMethod("find", String.class);
     assertTrue((Boolean) matches.invoke(matcher, "192.168.1.1"));
@@ -289,7 +289,8 @@ class ReggieMatcherBytecodeGeneratorTest {
     assertThrows(
         IllegalStateException.class,
         () ->
-            new ReggieMatcherBytecodeGenerator("test.generated", "GreedyBacktrackMatcher", "(.*)end")
+            new ReggieMatcherBytecodeGenerator(
+                    "test.generated", "GreedyBacktrackMatcher", "(.*)end")
                 .generate());
   }
 
@@ -317,7 +318,8 @@ class ReggieMatcherBytecodeGeneratorTest {
     Method matches = matcher.getClass().getMethod("matches", String.class);
     Method find = matcher.getClass().getMethod("find", String.class);
     assertTrue((Boolean) find.invoke(matcher, "aabbbcccd"));
-    assertNotNull(matches.invoke(matcher, "aabbbcccd"));
+    // matches() requires full string; pattern ends before the d (lookahead is zero-width)
+    assertFalse((Boolean) matches.invoke(matcher, "aabbbcccd"));
   }
 
   @Test
@@ -352,8 +354,13 @@ class ReggieMatcherBytecodeGeneratorTest {
   void testHybridDfaLookaheadStrategy() throws Exception {
     Object matcher = compile("(?=.*[A-Z])abc", "HybridLookaheadMatcher");
     Method matches = matcher.getClass().getMethod("matches", String.class);
-    assertNotNull(matches.invoke(matcher, "abc"));
-    assertNotNull(matches.invoke(matcher, "abcZ"));
+    Method find = matcher.getClass().getMethod("find", String.class);
+    assertFalse((Boolean) matches.invoke(matcher, "abc")); // lookahead: no uppercase
+    assertFalse(
+        (Boolean)
+            matches.invoke(matcher, "abcZ")); // uppercase after; matches() fails (partial consume)
+    assertTrue(
+        (Boolean) find.invoke(matcher, "abcX")); // finds "abc" substring when uppercase is ahead
   }
 
   @Test
@@ -384,9 +391,11 @@ class ReggieMatcherBytecodeGeneratorTest {
     Object matcher = compile("(\\w+).(\\w+).\\1", "NfaBackrefsMatcher");
     Method matches = matcher.getClass().getMethod("matches", String.class);
     Method find = matcher.getClass().getMethod("find", String.class);
-    assertNotNull(matches.invoke(matcher, "aXaXa"));
-    assertNotNull(matches.invoke(matcher, "aXbXa"));
-    assertNotNull(find.invoke(matcher, "aXaXa more text"));
+    assertTrue(
+        (Boolean) matches.invoke(matcher, "aXaXa")); // group1=a, sep=X, group2=a, sep=X, \1=a
+    assertTrue(
+        (Boolean) matches.invoke(matcher, "aXbXa")); // group1=a, sep=X, group2=b, sep=X, \1=a
+    assertTrue((Boolean) find.invoke(matcher, "aXaXa more text"));
   }
 
   @Test
@@ -399,15 +408,19 @@ class ReggieMatcherBytecodeGeneratorTest {
     Object matcher = compile("a{1,10}b{1,10}c{1,10}(?!d)", "DfaSwitchNegLookaheadMatcher");
     Method matches = matcher.getClass().getMethod("matches", String.class);
     Method find = matcher.getClass().getMethod("find", String.class);
-    assertNotNull(matches.invoke(matcher, "aabbbccc"));
-    assertNotNull(find.invoke(matcher, "aabbbccc end"));
+    assertTrue(
+        (Boolean) matches.invoke(matcher, "aabbbccc")); // no 'd' after — negative lookahead passes
+    assertFalse(
+        (Boolean) matches.invoke(matcher, "aabbbcccd")); // 'd' after — negative lookahead fails
+    assertTrue((Boolean) find.invoke(matcher, "aabbbccc end"));
   }
 
   @Test
   void testDfaSwitchNegativeLookbehindStrategy() throws Exception {
     Object matcher = compile("(?<!a)b{1,10}c{1,10}d{1,10}", "DfaSwitchNegLookbehindMatcher");
     Method matches = matcher.getClass().getMethod("matches", String.class);
-    assertNotNull(matches.invoke(matcher, "bbccddd"));
+    assertTrue((Boolean) matches.invoke(matcher, "bbccddd")); // no 'a' before — lookbehind passes
+    assertFalse((Boolean) matches.invoke(matcher, ""));
   }
 
   @Test
@@ -447,6 +460,22 @@ class ReggieMatcherBytecodeGeneratorTest {
     assertTrue((Boolean) matches.invoke(matcher, "!@#"));
     assertFalse((Boolean) matches.invoke(matcher, "abc"));
     assertFalse((Boolean) matches.invoke(matcher, ""));
+  }
+
+  @Test
+  void testFallbackPatternsRejected() {
+    // Patterns with known engine bugs must fail at build time, not produce buggy bytecode.
+    assertThrows(
+        UnsupportedOperationException.class,
+        () ->
+            new ReggieMatcherBytecodeGenerator(
+                    "test.generated", "TripleRepeat", "(\\w+)\\s+\\1\\s+\\1")
+                .generate());
+    assertThrows(
+        UnsupportedOperationException.class,
+        () ->
+            new ReggieMatcherBytecodeGenerator("test.generated", "AltLookbehind", "(?<=a|b)c")
+                .generate());
   }
 
   /** Custom ClassLoader for loading generated bytecode in tests. */
