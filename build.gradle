@@ -62,14 +62,13 @@ subprojects {
                 }
             }
         }
+        def gpgKeyProvider = providers.environmentVariable("GPG_PRIVATE_KEY")
+        def gpgPasswordProvider = providers.environmentVariable("GPG_PASSWORD")
         signing {
-            useInMemoryPgpKeys(
-                providers.environmentVariable("GPG_PRIVATE_KEY").orNull,
-                providers.environmentVariable("GPG_PASSWORD").orNull
-            )
+            useInMemoryPgpKeys(gpgKeyProvider.orNull, gpgPasswordProvider.orNull)
         }
         tasks.withType(Sign).configureEach {
-            onlyIf { providers.environmentVariable("GPG_PRIVATE_KEY").isPresent() }
+            onlyIf { gpgKeyProvider.isPresent() }
         }
     }
 }
