@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
 # Release script for java-reggie.
-# Computes the release version by bumping the current SNAPSHOT, auto-generates
-# release notes from merged PRs, and creates a tagged release commit.
+# Releases the current SNAPSHOT as-is: X.Y.Z-SNAPSHOT becomes X.Y.Z.
+# Auto-generates release notes from merged PRs and creates a tagged release commit.
+# The next-version bump is handled separately by ./scripts/post-release.sh.
 #
 # Usage: ./scripts/release.sh <major|minor|patch> [--no-dry-run]
 # Example: ./scripts/release.sh minor             # dry-run: shows what would happen
 #          ./scripts/release.sh minor --no-dry-run # actually performs the release
 #
-# Branch rules:
-#   major / minor  — must be run from 'main'
-#   patch          — must be run from 'release/X.Y._'
+# The <major|minor|patch> argument does NOT change the release version — that
+# always comes from build.gradle. It controls release-flow rules:
+#   major / minor  — must be run from 'main'; creates a 'release/X.Y._' maintenance branch
+#   patch          — must be run from an existing 'release/X.Y._' branch
 #
 # PRs labelled 'no release notes' are excluded from the generated CHANGELOG entry.
 
@@ -37,17 +39,14 @@ fi
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
-# Read current version from build.gradle and strip -SNAPSHOT
+# Read current version from build.gradle and strip -SNAPSHOT.
+# X.Y.Z-SNAPSHOT releases as X.Y.Z; post-release.sh handles the next-version bump.
 CURRENT="$(grep '^project.version' "$ROOT/build.gradle" | cut -d'"' -f2)"
-BASE="${CURRENT%-SNAPSHOT}"
-
-IFS='.' read -r MAJOR MINOR PATCH <<< "$BASE"
-
-case "$BUMP" in
-    major) VERSION="$((MAJOR + 1)).0.0" ;;
-    minor) VERSION="${MAJOR}.$((MINOR + 1)).0" ;;
-    patch) VERSION="${MAJOR}.${MINOR}.$((PATCH + 1))" ;;
-esac
+if [[ "$CURRENT" != *-SNAPSHOT ]]; then
+    echo "ERROR: build.gradle version ($CURRENT) is not a SNAPSHOT — nothing to release."
+    exit 1
+fi
+VERSION="${CURRENT%-SNAPSHOT}"
 
 TAG="v${VERSION}"
 
