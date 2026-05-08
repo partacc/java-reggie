@@ -151,6 +151,7 @@ Latest results from January 2026 benchmark report:
 | State Explosion | **389x** | **59.1x** | Catastrophic backtracking patterns (ReDoS immunity) |
 | Backreferences | **25.6x** | n/a | RE2J doesn't support backrefs |
 | Assertions | **9.1x** | n/a | Lookahead/lookbehind (RE2J doesn't support) |
+| Split Operations | **1.6–6.3x** | **3.6–8.0x** | `split(input, limit)`; positive limit triggers early-termination path |
 
 *RE2J benchmarks excluded for patterns using backreferences and assertions (unsupported features).*
 
